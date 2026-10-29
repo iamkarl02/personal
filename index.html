@@ -23,7 +23,6 @@
   html, body {
     overflow: hidden;
     height: 100%;
-    scroll-behavior: smooth;
   }
 
   /* Clase que se añade cuando la consola está abierta */
@@ -39,36 +38,53 @@
     position: relative;
   }
 
-  /* ===== FONDO FIJO ===== */
-  .bg-container {
+  /* ===== VIDEO DE FONDO ===== */
+  .bg-video {
     position: fixed;
-    inset: -5%;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
     z-index: -2;
-    background-image: url('https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?q=80&w=1920&auto=format&fit=crop');
-    background-size: cover;
-    background-position: center 30%;
-    filter: brightness(0.3) contrast(1.3) grayscale(0.7) sepia(0.3);
-    animation: bgCarMotion 15s infinite alternate ease-in-out;
+    filter: brightness(0.55) contrast(1.15) grayscale(0.6) sepia(0.25);
+    animation: bgVideoMotion 20s infinite alternate ease-in-out;
   }
+
+  @keyframes bgVideoMotion {
+    0%   { transform: translate(-50%, -50%) scale(1)    rotate(0deg); }
+    100% { transform: translate(-52%, -51%) scale(1.08) rotate(0.5deg); }
+  }
+
+  body.console-active .bg-video {
+    filter: brightness(0.25) contrast(1.4) grayscale(0.8) sepia(0.3);
+    transition: filter 0.5s ease;
+  }
+
   .bg-lights {
     position: fixed; bottom: 15%; left: 55%; width: 15vw; height: 15vw;
     background: radial-gradient(circle, rgba(255, 200, 100, 0.4) 0%, transparent 60%);
     filter: blur(20px); z-index: -1;
     animation: lightFlicker 4s infinite alternate, lightSway 8s infinite alternate ease-in-out;
+    pointer-events: none;
   }
   .bg-lights-2 {
     position: fixed; bottom: 10%; left: 45%; width: 30vw; height: 10vw;
     background: radial-gradient(ellipse, rgba(255, 150, 0, 0.2) 0%, transparent 70%);
     filter: blur(30px); z-index: -1;
     animation: lightSway2 10s infinite alternate ease-in-out;
+    pointer-events: none;
   }
   .bg-gradient {
     position: fixed; inset: 0;
-    background: linear-gradient(180deg, rgba(5,5,5,0.95) 0%, rgba(5,5,5,0.6) 40%, transparent 100%);
+    background: linear-gradient(180deg, rgba(5,5,5,0.85) 0%, rgba(5,5,5,0.4) 40%, transparent 100%);
     z-index: -1; pointer-events: none;
   }
 
-  /* ===== FILTRO CRT ===== */
+  /* FILTRO CRT */
   .crt-overlay {
     position: fixed; inset: 0; pointer-events: none; z-index: 9999;
     background: repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 2px, transparent 2px, transparent 4px);
@@ -80,7 +96,40 @@
   }
 
   /* ==========================================================================
-     SECCIÓN SUPERIOR: EL MENÚ
+     BOTÓN OFF FLOTANTE
+     ========================================================================== */
+  .tv-close {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, #ff3333 0%, #8a0000 100%);
+    color: #fff; border: 3px solid #fff; border-radius: 50%;
+    font-family: 'Teko', sans-serif; font-size: 1.8rem; font-weight: 700;
+    cursor: pointer; z-index: 10000;
+    box-shadow: 0 5px 15px rgba(255,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.5);
+    transition: all 0.2s ease;
+    display: none; 
+    justify-content: center; align-items: center;
+  }
+  
+  body.console-active .tv-close {
+    display: flex;
+    animation: fadeInScale 0.4s ease forwards;
+  }
+
+  .tv-close:hover { 
+    background: radial-gradient(circle, #ff5555 0%, #cc0000 100%); 
+    transform: scale(1.1) rotate(90deg); 
+  }
+
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ==========================================================================
+     SECCIÓN 1: EL MENÚ (Arriba)
      ========================================================================== */
   .top-section {
     min-height: 100dvh;
@@ -88,24 +137,31 @@
     flex-direction: column;
     justify-content: center;
     padding-left: clamp(2rem, 8vw, 10rem);
+    padding-top: 5vh;
     position: relative;
     z-index: 10;
+    overflow: hidden; 
+    animation: fadeIn 1s ease both;
   }
 
   .main-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(4.5rem, 12vw, 9rem); 
-    line-height: 0.9;
+    line-height: 1.1; 
     background: linear-gradient(135deg, #ffffff 0%, #ffffff 30%, var(--naranja-oscuro) 70%, var(--naranja-oscuro) 100%);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
     filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.8));
     margin-bottom: 2rem;
+    padding-top: 15px; 
     position: relative;
-    transition: all 0.3s ease;
   }
+
   .main-title::before, .main-title::after {
     content: attr(data-text); position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%; overflow: hidden; pointer-events: none; opacity: 0.7;
+    width: 100%; height: 100%; 
+    overflow: visible; 
+    pointer-events: none; opacity: 0.7;
+    padding-top: 15px; 
   }
   .main-title::before { color: var(--naranja); z-index: -1; animation: glitch-anim-1 3s infinite linear alternate-reverse; }
   .main-title::after { color: #00ffff; z-index: -2; animation: glitch-anim-2 2s infinite linear alternate-reverse; }
@@ -158,24 +214,22 @@
   }
 
   /* ==========================================================================
-     SECCIÓN INFERIOR: LA CONSOLA
+     SECCIÓN 2: LA CONSOLA (Oculta por defecto)
      ========================================================================== */
   .bottom-section {
     min-height: 100dvh;
-    display: flex;
+    display: none; 
     justify-content: center;
     align-items: center;
     padding: 5vh 2vw;
     position: relative;
     z-index: 10;
-    
-    /* Oculto y bloqueado por defecto */
-    display: none; 
+    background: #000; /* Fondo sólido */
   }
 
-  /* Cuando se activa, se muestra (display: flex) desde el JS */
   .bottom-section.active {
     display: flex;
+    animation: fadeIn 0.6s ease both;
   }
 
   .retro-tv-panel {
@@ -191,14 +245,6 @@
     position: relative;
     display: flex; flex-direction: column;
     padding: 20px 30px 40px 30px;
-    
-    /* Animación de entrada */
-    animation: slideUpPanel 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  }
-
-  @keyframes slideUpPanel {
-    from { opacity: 0; transform: translateY(50px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   .monitor-brand {
@@ -241,19 +287,6 @@
   .tv-screen::-webkit-scrollbar-track { background: #000; }
   .tv-screen::-webkit-scrollbar-thumb { background: var(--verde-crt); border-radius: 5px; }
 
-  .tv-close {
-    position: absolute; top: 25px; right: 30px;
-    width: 60px; height: 60px;
-    background: radial-gradient(circle, #ff3333 0%, #8a0000 100%);
-    color: #fff; border: 3px solid #fff; border-radius: 50%;
-    font-family: 'Teko', sans-serif; font-size: 1.8rem; font-weight: 700;
-    cursor: pointer; z-index: 20;
-    box-shadow: 0 5px 15px rgba(255,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.5);
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex; justify-content: center; align-items: center;
-  }
-  .tv-close:hover { background: radial-gradient(circle, #ff5555 0%, #cc0000 100%); transform: scale(1.1) rotate(90deg); }
-
   .tv-content { padding: clamp(20px, 4vw, 50px); animation: fadeIn 0.6s ease both; max-width: 1100px; margin: 0 auto; }
   .tv-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.5rem, 5vw, 4.5rem); letter-spacing: 2px; margin-bottom: 20px; border-bottom: 2px dashed var(--verde-crt); padding-bottom: 10px; text-shadow: 0 0 10px var(--verde-crt); color: #fff; }
   .tv-text { font-size: clamp(1rem, 1.5vw, 1.25rem); line-height: 1.6; margin-bottom: 20px; color: #b4ffb4; }
@@ -283,19 +316,18 @@
   .tv-submit { background: transparent; border: 3px solid var(--verde-crt); color: var(--verde-crt); font-family: 'Teko'; font-size: 2rem; padding: 10px 40px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 3px; border-radius: 5px; }
   .tv-submit:hover { background: var(--verde-crt); color: #000; box-shadow: 0 0 30px rgba(57,255,20,0.6); }
 
-  /* ===== ANIMACIONES ===== */
-  @keyframes bgCarMotion { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-3%, -1%); } }
+  /* ===== ANIMACIONES GLOBALES ===== */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lightFlicker { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
   @keyframes lightSway { 0% { transform: translateX(0); } 100% { transform: translateX(-15px); } }
   @keyframes lightSway2 { 0% { transform: translateX(0) scale(1); } 100% { transform: translateX(-25px) scale(1.05); } }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulseLed { 0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--verde-crt), 0 0 20px var(--verde-crt); } 50% { opacity: 0.5; box-shadow: 0 0 5px var(--verde-crt); } }
   @keyframes glitch-anim-1 { 0% { clip-path: inset(10% 0 60% 0); transform: translate(-2px, 1px); } 20% { clip-path: inset(80% 0 10% 0); transform: translate(2px, -1px); } 40% { clip-path: inset(40% 0 30% 0); transform: translate(-1px, 2px); } 60% { clip-path: inset(20% 0 70% 0); transform: translate(1px, -2px); } 80% { clip-path: inset(60% 0 20% 0); transform: translate(-2px, 1px); } 100% { clip-path: inset(30% 0 50% 0); transform: translate(2px, -1px); } }
   @keyframes glitch-anim-2 { 0% { clip-path: inset(70% 0 10% 0); transform: translate(2px, 1px); } 25% { clip-path: inset(20% 0 60% 0); transform: translate(-2px, -1px); } 50% { clip-path: inset(50% 0 30% 0); transform: translate(1px, 2px); } 75% { clip-path: inset(10% 0 80% 0); transform: translate(-1px, -2px); } 100% { clip-path: inset(40% 0 40% 0); transform: translate(2px, 0); } }
 
   /* ===== RESPONSIVE MÓVIL ===== */
   @media (max-width: 860px) {
-    .top-section { padding-left: 2rem; }
+    .top-section { padding-left: 2rem; padding-top: 10vh; }
     .main-title { font-size: clamp(3rem, 15vw, 5rem); }
     .btn { font-size: clamp(1.5rem, 6vw, 2.2rem); }
     .options-list .btn { animation: none !important; transform: none !important; }
@@ -310,12 +342,18 @@
 </head>
 <body>
 
-  <!-- FONDO FIJO -->
-  <div class="bg-container"></div>
+  <!-- ===== VIDEO DE FONDO ===== -->
+  <video class="bg-video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?q=80&w=1920&auto=format&fit=crop">
+    <source src="videoplayback.mp4" type="video/mp4">
+  </video>
+
   <div class="bg-lights"></div>
   <div class="bg-lights-2"></div>
   <div class="bg-gradient"></div>
   <div class="crt-overlay"></div>
+
+  <!-- BOTÓN OFF FLOTANTE GLOBAL -->
+  <button class="tv-close" id="tv-close">OFF</button>
 
   <!-- ==========================================================================
        SECCIÓN 1: EL MENÚ (Arriba)
@@ -339,8 +377,6 @@
   <section class="bottom-section" id="bottom-section">
     
     <div class="retro-tv-panel">
-      
-      <button class="tv-close" id="tv-close">OFF</button>
       
       <div class="monitor-brand">SISTEMA // <span>CHARLY</span>-VISION</div>
       <div class="vents">
@@ -411,7 +447,6 @@
     const bottomSection = document.getElementById('bottom-section');
     const tvClose = document.getElementById('tv-close');
 
-    // Función para cambiar el contenido y el título
     function switchSection(sectionId, titleText) {
       document.querySelectorAll('.tv-content').forEach(el => el.style.display = 'none');
       const target = document.getElementById('content-' + sectionId);
@@ -424,15 +459,12 @@
       mainTitle.setAttribute('data-text', titleText);
     }
 
-    // --- CLICS EN EL MENÚ ---
     buttons.forEach(btn => {
-      // Hover
       btn.addEventListener('mouseenter', () => {
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
       });
 
-      // Click -> Abre consola, desbloquea scroll y baja
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         buttons.forEach(b => b.classList.remove('active'));
@@ -441,44 +473,43 @@
         const section = btn.getAttribute('data-section');
         const title = btn.getAttribute('data-title');
         
-        // 1. Cambiar contenido
         switchSection(section, title);
         
-        // 2. Mostrar la consola
+        // Activar la consola y el scroll
         bottomSection.classList.add('active');
-        
-        // 3. DESBLOQUEAR EL SCROLL para poder bajar
         document.body.classList.add('console-active');
         
-        // 4. Hacer el "tiro" hacia abajo
+        // Salto seco instantáneo
         setTimeout(() => {
-          bottomSection.scrollIntoView({ behavior: 'smooth' });
+          const targetPosition = bottomSection.offsetTop;
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'instant'
+          });
         }, 50);
       });
     });
 
-    // --- BOTÓN OFF DE LA CONSOLA ---
+    // Botón OFF
     tvClose.addEventListener('click', () => {
-      // 1. Hacer scroll de vuelta arriba
-      topSection.scrollIntoView({ behavior: 'smooth' });
+      // Salto instantáneo hacia arriba
+      window.scrollTo({
+        top: 0,
+        behavior: 'instant'
+      });
       
-      // 2. Esperar a que termine el scroll para ocultar la consola y bloquear de nuevo
       setTimeout(() => {
-        // Ocultar consola
         bottomSection.classList.remove('active');
-        
-        // BLOQUEAR EL SCROLL otra vez (así no deja bajar si no eliges nada)
         document.body.classList.remove('console-active');
         
-        // Resetear título
         buttons.forEach(b => b.classList.remove('active'));
         buttons[0].classList.add('active');
         mainTitle.textContent = "MENÚ PRINCIPAL";
         mainTitle.setAttribute('data-text', "MENÚ PRINCIPAL");
-      }, 600); // Un poco de delay para que el scroll sea fluido antes de desaparecer
+      }, 100);
     });
 
-    // --- LÓGICA SLIDER ---
+    // Slider
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
     window.moveSlide = function(n) {
@@ -491,7 +522,6 @@
         moveSlide(1);
       }
     }, 3000);
-
   </script>
 </body>
 </html>
