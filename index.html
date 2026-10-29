@@ -1,294 +1,497 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Explorador RAID Local</title>
-    <style>
-        :root {
-            --bg-color: #f3f3f3;
-            --panel-bg: #ffffff;
-            --border-color: #d1d1d1;
-            --primary-color: #0078d4;
-            --primary-hover: #106ebe;
-            --text-color: #333333;
-            --folder-color: #d97706;
-            --file-color: #2563eb;
-            --hover-bg: #f5f5f5;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CHARLLYYYYY // SISTEMA TÁCTICO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Teko:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
+  :root {
+    --naranja-oscuro: #d14a00;
+    --naranja: #ff6a00;
+    --negro: #080808;
+    --texto-base: #a0a0a0;
+    --verde-crt: #39ff14; 
+    --fondo-tv: #051405; 
+  }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
+  /* Bloqueo inicial del scroll */
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    scroll-behavior: smooth;
+  }
 
-        header {
-            background-color: #0078d4;
-            color: white;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  /* Clase que se añade cuando la consola está abierta */
+  body.console-active {
+    overflow-y: auto;
+    height: auto;
+  }
 
-        header h1 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: #000;
+    color: #fff;
+    position: relative;
+  }
 
-        .controls {
-            padding: 15px 20px;
-            background: #fafafa;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+  /* ===== FONDO FIJO ===== */
+  .bg-container {
+    position: fixed;
+    inset: -5%;
+    z-index: -2;
+    background-image: url('https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?q=80&w=1920&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center 30%;
+    filter: brightness(0.3) contrast(1.3) grayscale(0.7) sepia(0.3);
+    animation: bgCarMotion 15s infinite alternate ease-in-out;
+  }
+  .bg-lights {
+    position: fixed; bottom: 15%; left: 55%; width: 15vw; height: 15vw;
+    background: radial-gradient(circle, rgba(255, 200, 100, 0.4) 0%, transparent 60%);
+    filter: blur(20px); z-index: -1;
+    animation: lightFlicker 4s infinite alternate, lightSway 8s infinite alternate ease-in-out;
+  }
+  .bg-lights-2 {
+    position: fixed; bottom: 10%; left: 45%; width: 30vw; height: 10vw;
+    background: radial-gradient(ellipse, rgba(255, 150, 0, 0.2) 0%, transparent 70%);
+    filter: blur(30px); z-index: -1;
+    animation: lightSway2 10s infinite alternate ease-in-out;
+  }
+  .bg-gradient {
+    position: fixed; inset: 0;
+    background: linear-gradient(180deg, rgba(5,5,5,0.95) 0%, rgba(5,5,5,0.6) 40%, transparent 100%);
+    z-index: -1; pointer-events: none;
+  }
 
-        button, label.btn-folder {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: background 0.2s;
-        }
+  /* ===== FILTRO CRT ===== */
+  .crt-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 2px, transparent 2px, transparent 4px);
+    mix-blend-mode: multiply;
+  }
+  .crt-overlay::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.9) 100%);
+  }
 
-        button:hover, label.btn-folder:hover {
-            background-color: var(--primary-hover);
-        }
+  /* ==========================================================================
+     SECCIÓN SUPERIOR: EL MENÚ
+     ========================================================================== */
+  .top-section {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: clamp(2rem, 8vw, 10rem);
+    position: relative;
+    z-index: 10;
+  }
 
-        input[type="file"] {
-            display: none;
-        }
+  .main-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4.5rem, 12vw, 9rem); 
+    line-height: 0.9;
+    background: linear-gradient(135deg, #ffffff 0%, #ffffff 30%, var(--naranja-oscuro) 70%, var(--naranja-oscuro) 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.8));
+    margin-bottom: 2rem;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  .main-title::before, .main-title::after {
+    content: attr(data-text); position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; overflow: hidden; pointer-events: none; opacity: 0.7;
+  }
+  .main-title::before { color: var(--naranja); z-index: -1; animation: glitch-anim-1 3s infinite linear alternate-reverse; }
+  .main-title::after { color: #00ffff; z-index: -2; animation: glitch-anim-2 2s infinite linear alternate-reverse; }
 
-        .path-display {
-            font-size: 13px;
-            color: #555;
-            padding: 8px 20px;
-            background: #fff;
-            border-bottom: 1px solid var(--border-color);
-            word-break: break-all;
-        }
+  .options-list {
+    display: flex; flex-direction: column; gap: 0.2rem; perspective: 1000px; 
+  }
 
-        .browser-grid {
-            min-height: 400px;
-            max-height: 600px;
-            overflow-y: auto;
-            padding: 0;
-            margin: 0;
-            list-style: none;
-        }
+  .btn {
+    font-family: 'Teko', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+    text-decoration: none; color: var(--texto-base);
+    background: transparent; border: none; padding: 4px 0;
+    cursor: pointer; display: flex; align-items: center; outline: none;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+  }
 
-        .item-row {
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.1s;
-        }
+  .options-list .btn:nth-child(1) { animation: curveWave1 4s infinite alternate ease-in-out; }
+  .options-list .btn:nth-child(2) { animation: curveWave2 4s infinite alternate ease-in-out 0.2s; }
+  .options-list .btn:nth-child(3) { animation: curveWave3 4s infinite alternate ease-in-out 0.4s; }
+  .options-list .btn:nth-child(4) { animation: curveWave4 4s infinite alternate ease-in-out 0.6s; }
 
-        .item-row:hover {
-            background-color: var(--hover-bg);
-        }
+  @keyframes curveWave1 { 0% { transform: translateX(25px) rotate(-2deg); } 100% { transform: translateX(15px) rotate(-1deg); } }
+  @keyframes curveWave2 { 0% { transform: translateX(10px) rotate(-1deg); } 100% { transform: translateX(5px) rotate(-0.5deg); } }
+  @keyframes curveWave3 { 0% { transform: translateX(0px) rotate(0deg); } 100% { transform: translateX(-5px) rotate(0.5deg); } }
+  @keyframes curveWave4 { 0% { transform: translateX(-10px) rotate(1deg); } 100% { transform: translateX(-20px) rotate(2deg); } }
 
-        .item-icon {
-            margin-right: 12px;
-            font-size: 18px;
-        }
+  .btn::before {
+    content: ''; display: inline-block; width: 12px; height: 12px;
+    background: var(--naranja); margin-right: 15px;
+    opacity: 0; transform: scale(0) rotate(45deg); transition: all 0.3s;
+  }
 
-        .item-name {
-            flex-grow: 1;
-            font-size: 14px;
-        }
+  .btn.active {
+    color: #fff; text-shadow: 0 0 15px rgba(255,106,0,0.8);
+    animation-play-state: paused;
+  }
+  .btn.active::before { opacity: 1; transform: scale(1) rotate(0deg); box-shadow: 0 0 10px var(--naranja); }
+  .btn:hover:not(.active) { color: #ccc; animation-play-state: paused; }
 
-        .item-type {
-            font-size: 12px;
-            color: #777;
-        }
+  .credits {
+    position: absolute; bottom: 30px; left: clamp(2rem, 8vw, 10rem);
+    font-size: 0.85rem; letter-spacing: 5px; text-transform: uppercase; color: #666;
+  }
+  .credits span {
+    background: linear-gradient(90deg, #fff 30%, var(--naranja) 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
 
-        .welcome-screen {
-            padding: 60px 20px;
-            text-align: center;
-            color: #666;
-        }
+  /* ==========================================================================
+     SECCIÓN INFERIOR: LA CONSOLA
+     ========================================================================== */
+  .bottom-section {
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5vh 2vw;
+    position: relative;
+    z-index: 10;
+    
+    /* Oculto y bloqueado por defecto */
+    display: none; 
+  }
 
-        .welcome-screen h3 {
-            margin-top: 0;
-            color: #333;
-        }
-    </style>
+  /* Cuando se activa, se muestra (display: flex) desde el JS */
+  .bottom-section.active {
+    display: flex;
+  }
+
+  .retro-tv-panel {
+    width: 100%; max-width: 1200px; height: 90dvh;
+    background: linear-gradient(135deg, #2a2a2a 0%, #111 50%, #222 100%);
+    border-radius: 30px;
+    border: 4px solid #444;
+    box-shadow: 
+      inset 0 2px 5px rgba(255,255,255,0.1),
+      inset 0 -5px 15px rgba(0,0,0,0.8),
+      0 30px 100px rgba(0,0,0,0.95),
+      0 0 60px rgba(57, 255, 20, 0.1);
+    position: relative;
+    display: flex; flex-direction: column;
+    padding: 20px 30px 40px 30px;
+    
+    /* Animación de entrada */
+    animation: slideUpPanel 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes slideUpPanel {
+    from { opacity: 0; transform: translateY(50px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .monitor-brand {
+    position: absolute; bottom: 10px; left: 40px;
+    font-family: 'Teko', sans-serif; font-size: 1.2rem; letter-spacing: 3px;
+    color: #555; text-transform: uppercase; font-weight: 700;
+  }
+  .monitor-brand span { color: var(--naranja); }
+
+  .monitor-leds {
+    position: absolute; bottom: 12px; right: 40px;
+    display: flex; gap: 15px; align-items: center;
+  }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: #333; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); }
+  .led.on { background: var(--verde-crt); box-shadow: 0 0 10px var(--verde-crt), 0 0 20px var(--verde-crt); animation: pulseLed 2s infinite; }
+
+  .vents { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+  .vent { width: 4px; height: 15px; background: #000; border-radius: 2px; box-shadow: inset 0 1px 2px rgba(255,255,255,0.1); }
+
+  .tv-screen {
+    flex: 1;
+    background: var(--fondo-tv);
+    border-radius: 12px;
+    border: 6px solid #000;
+    position: relative; overflow-y: auto;
+    box-shadow: inset 0 0 60px rgba(0,0,0,1), 0 0 20px rgba(57, 255, 20, 0.2);
+    background-image: 
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 3px 100%;
+    color: var(--verde-crt);
+    font-family: 'Space Grotesk', sans-serif;
+    scroll-behavior: smooth;
+  }
+  .tv-screen::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.9); border-radius: 12px;
+  }
+  .tv-screen::-webkit-scrollbar { width: 10px; }
+  .tv-screen::-webkit-scrollbar-track { background: #000; }
+  .tv-screen::-webkit-scrollbar-thumb { background: var(--verde-crt); border-radius: 5px; }
+
+  .tv-close {
+    position: absolute; top: 25px; right: 30px;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, #ff3333 0%, #8a0000 100%);
+    color: #fff; border: 3px solid #fff; border-radius: 50%;
+    font-family: 'Teko', sans-serif; font-size: 1.8rem; font-weight: 700;
+    cursor: pointer; z-index: 20;
+    box-shadow: 0 5px 15px rgba(255,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.5);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; justify-content: center; align-items: center;
+  }
+  .tv-close:hover { background: radial-gradient(circle, #ff5555 0%, #cc0000 100%); transform: scale(1.1) rotate(90deg); }
+
+  .tv-content { padding: clamp(20px, 4vw, 50px); animation: fadeIn 0.6s ease both; max-width: 1100px; margin: 0 auto; }
+  .tv-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.5rem, 5vw, 4.5rem); letter-spacing: 2px; margin-bottom: 20px; border-bottom: 2px dashed var(--verde-crt); padding-bottom: 10px; text-shadow: 0 0 10px var(--verde-crt); color: #fff; }
+  .tv-text { font-size: clamp(1rem, 1.5vw, 1.25rem); line-height: 1.6; margin-bottom: 20px; color: #b4ffb4; }
+
+  .slider-container { position: relative; width: 100%; height: clamp(200px, 35vh, 350px); margin-bottom: 30px; border: 2px solid var(--verde-crt); overflow: hidden; border-radius: 8px; box-shadow: 0 0 15px rgba(57,255,20,0.3); }
+  .slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s ease; filter: sepia(1) hue-rotate(60deg) contrast(1.3) brightness(0.9); }
+  .slide.active { opacity: 1; }
+  .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.8); color: var(--verde-crt); border: 2px solid var(--verde-crt); padding: 10px 15px; cursor: pointer; z-index: 2; font-family: 'Teko'; font-size: 1.5rem; transition: 0.2s; }
+  .slider-btn:hover { background: var(--verde-crt); color: #000; }
+  .prev { left: 10px; }
+  .next { right: 10px; }
+
+  .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+  .project-card { border: 1px solid rgba(57, 255, 20, 0.4); padding: 20px; border-radius: 8px; background: rgba(57, 255, 20, 0.05); transition: all 0.3s; }
+  .project-card:hover { background: rgba(57, 255, 20, 0.15); border-color: var(--verde-crt); transform: translateY(-5px); box-shadow: 0 5px 20px rgba(57,255,20,0.3); }
+  .project-card h3 { font-family: 'Teko'; font-size: 2rem; margin-bottom: 5px; color: #fff; }
+
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-family: 'Teko'; font-size: 1.5rem; margin-bottom: 5px; color: #fff; }
+  .tv-input { width: 100%; padding: 12px; background: #000; border: 2px solid var(--verde-crt); color: var(--verde-crt); font-family: 'Space Grotesk'; font-size: 1rem; outline: none; transition: 0.2s; }
+  .tv-input:focus { box-shadow: 0 0 20px rgba(57, 255, 20, 0.5); background: #051405; }
+  .checkbox-group { display: flex; align-items: center; gap: 15px; margin: 20px 0; }
+  .checkbox-group input[type="checkbox"] { appearance: none; width: 25px; height: 25px; border: 2px solid var(--verde-crt); background: #000; cursor: pointer; position: relative; flex-shrink: 0; transition: 0.2s; }
+  .checkbox-group input[type="checkbox"]:checked { background: rgba(57,255,20,0.2); }
+  .checkbox-group input[type="checkbox"]:checked::after { content: 'X'; color: var(--verde-crt); font-family:'Teko'; position: absolute; top: -4px; left: 4px; font-size: 24px; font-weight: bold; text-shadow: 0 0 5px var(--verde-crt); }
+  .checkbox-group label { font-size: 1rem; margin: 0; color: #b4ffb4; }
+  .tv-submit { background: transparent; border: 3px solid var(--verde-crt); color: var(--verde-crt); font-family: 'Teko'; font-size: 2rem; padding: 10px 40px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 3px; border-radius: 5px; }
+  .tv-submit:hover { background: var(--verde-crt); color: #000; box-shadow: 0 0 30px rgba(57,255,20,0.6); }
+
+  /* ===== ANIMACIONES ===== */
+  @keyframes bgCarMotion { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-3%, -1%); } }
+  @keyframes lightFlicker { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+  @keyframes lightSway { 0% { transform: translateX(0); } 100% { transform: translateX(-15px); } }
+  @keyframes lightSway2 { 0% { transform: translateX(0) scale(1); } 100% { transform: translateX(-25px) scale(1.05); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulseLed { 0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--verde-crt), 0 0 20px var(--verde-crt); } 50% { opacity: 0.5; box-shadow: 0 0 5px var(--verde-crt); } }
+  @keyframes glitch-anim-1 { 0% { clip-path: inset(10% 0 60% 0); transform: translate(-2px, 1px); } 20% { clip-path: inset(80% 0 10% 0); transform: translate(2px, -1px); } 40% { clip-path: inset(40% 0 30% 0); transform: translate(-1px, 2px); } 60% { clip-path: inset(20% 0 70% 0); transform: translate(1px, -2px); } 80% { clip-path: inset(60% 0 20% 0); transform: translate(-2px, 1px); } 100% { clip-path: inset(30% 0 50% 0); transform: translate(2px, -1px); } }
+  @keyframes glitch-anim-2 { 0% { clip-path: inset(70% 0 10% 0); transform: translate(2px, 1px); } 25% { clip-path: inset(20% 0 60% 0); transform: translate(-2px, -1px); } 50% { clip-path: inset(50% 0 30% 0); transform: translate(1px, 2px); } 75% { clip-path: inset(10% 0 80% 0); transform: translate(-1px, -2px); } 100% { clip-path: inset(40% 0 40% 0); transform: translate(2px, 0); } }
+
+  /* ===== RESPONSIVE MÓVIL ===== */
+  @media (max-width: 860px) {
+    .top-section { padding-left: 2rem; }
+    .main-title { font-size: clamp(3rem, 15vw, 5rem); }
+    .btn { font-size: clamp(1.5rem, 6vw, 2.2rem); }
+    .options-list .btn { animation: none !important; transform: none !important; }
+    .credits { left: 2rem; bottom: 20px; }
+
+    .retro-tv-panel { height: 85dvh; padding: 10px; border-radius: 15px; }
+    .monitor-brand, .monitor-leds, .vents { display: none; }
+    .tv-close { top: 15px; right: 15px; width: 45px; height: 45px; font-size: 1.4rem; }
+    .tv-screen { border-width: 3px; }
+  }
+</style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>🗂️ Mini Explorador RAID (Local)</h1>
-    </header>
+  <!-- FONDO FIJO -->
+  <div class="bg-container"></div>
+  <div class="bg-lights"></div>
+  <div class="bg-lights-2"></div>
+  <div class="bg-gradient"></div>
+  <div class="crt-overlay"></div>
 
-    <div class="controls">
-        <label class="btn-folder" for="folderInput">
-            📂 Seleccionar Carpeta RAID
-        </label>
-        <input type="file" id="folderInput" webkitdirectory directory multiple>
-        <button id="backBtn" style="display:none;" onclick="goBack()">⬆️ Carpeta Superior</button>
+  <!-- ==========================================================================
+       SECCIÓN 1: EL MENÚ (Arriba)
+       ========================================================================== -->
+  <section class="top-section" id="top-section">
+    <div class="main-title" id="main-title" data-text="MENÚ PRINCIPAL">MENÚ PRINCIPAL</div>
+    
+    <div class="options-list" id="menu-list">
+      <a href="#" class="btn active" data-section="inicio" data-title="INICIO">INICIO</a>
+      <a href="#" class="btn" data-section="proyectos" data-title="PROYECTOS">PROYECTOS</a>
+      <a href="#" class="btn" data-section="servicios" data-title="SERVICIOS">SERVICIOS</a>
+      <a href="#" class="btn" data-section="contacto" data-title="CONTACTO">CONTACTO</a>
     </div>
 
-    <div class="path-display" id="pathDisplay">
-        Estado: Ninguna carpeta seleccionada. Haz clic en "Seleccionar Carpeta RAID" para empezar.
-    </div>
+    <div class="credits">Creado por <span>CHARLLYYYY</span></div>
+  </section>
 
-    <ul class="browser-grid" id="fileList">
-        <div class="welcome-screen">
-            <h3>Bienvenido</h3>
-            <p>Selecciona la carpeta principal de tu RAID o disco duro para listar todo su contenido instantáneamente.</p>
-        </div>
-    </ul>
-</div>
+  <!-- ==========================================================================
+       SECCIÓN 2: LA CONSOLA (Oculta por defecto)
+       ========================================================================== -->
+  <section class="bottom-section" id="bottom-section">
+    
+    <div class="retro-tv-panel">
+      
+      <button class="tv-close" id="tv-close">OFF</button>
+      
+      <div class="monitor-brand">SISTEMA // <span>CHARLY</span>-VISION</div>
+      <div class="vents">
+        <div class="vent"></div><div class="vent"></div><div class="vent"></div>
+        <div class="vent"></div><div class="vent"></div><div class="vent"></div>
+        <div class="vent"></div><div class="vent"></div><div class="vent"></div>
+      </div>
+      <div class="monitor-leds">
+        <div class="led on"></div>
+        <div class="led"></div>
+      </div>
 
-<script>
-    let fileStructure = {};
-    let currentPath = [];
-
-    const folderInput = document.getElementById('folderInput');
-    const fileList = document.getElementById('fileList');
-    const pathDisplay = document.getElementById('pathDisplay');
-    const backBtn = document.getElementById('backBtn');
-
-    folderInput.addEventListener('change', (event) => {
-        const files = event.target.files;
-        if (files.length === 0) return;
-
-        fileStructure = {};
+      <div class="tv-screen" id="tv-screen">
         
-        // Construir un árbol de archivos virtual a partir del input nativo
-        for (let file of files) {
-            let pathParts = file.webkitRelativePath.split('/');
-            let currentLevel = fileStructure;
+        <div class="tv-content" id="content-inicio">
+          <h2 class="tv-title">SISTEMA INICIADO</h2>
+          <p class="tv-text">Bienvenido a la interfaz táctil. Navega por las categorías para explorar los archivos del sistema.</p>
+          <p class="tv-text">Todo está en línea y listo para operar. <br>> <span style="background:var(--verde-crt); color:#000; padding:0 8px; font-weight:bold;">STATUS: OK</span></p>
+        </div>
 
-            for (let i = 0; i < pathParts.length; i++) {
-                let part = pathParts[i];
-                if (i === pathParts.length - 1) {
-                    // Es un archivo final
-                    currentLevel[part] = file;
-                } else {
-                    // Es una carpeta
-                    if (!currentLevel[part]) {
-                        currentLevel[part] = {};
-                    }
-                    currentLevel = currentLevel[part];
-                }
-            }
-        }
+        <div class="tv-content" id="content-proyectos" style="display:none;">
+          <h2 class="tv-title">PROYECTOS ACTIVOS</h2>
+          <div class="slider-container">
+            <div class="slide active" style="background-image: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800');"></div>
+            <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800');"></div>
+            <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800');"></div>
+            <button class="slider-btn prev" onclick="moveSlide(-1)">&lt;</button>
+            <button class="slider-btn next" onclick="moveSlide(1)">&gt;</button>
+          </div>
+          <div class="projects-grid">
+            <div class="project-card"><h3>Alpha</h3><p>Interfaz UI/UX táctica. Completado.</p></div>
+            <div class="project-card"><h3>Beta</h3><p>Sistema de bases de datos. En curso.</p></div>
+            <div class="project-card"><h3>Gamma</h3><p>Módulo de comunicaciones. Pendiente.</p></div>
+            <div class="project-card"><h3>Delta</h3><p>Prototipo de hardware. Testeando.</p></div>
+          </div>
+        </div>
 
-        currentPath = [];
-        renderView();
+        <div class="tv-content" id="content-servicios" style="display:none;">
+          <h2 class="tv-title">SERVICIOS DISPONIBLES</h2>
+          <p class="tv-text">Selecciona los módulos que necesitas:</p>
+          <div class="checkbox-group"><input type="checkbox" id="s1" checked><label for="s1">Diseño Táctico UI/UX</label></div>
+          <div class="checkbox-group"><input type="checkbox" id="s2" checked><label for="s2">Desarrollo Web Front-End</label></div>
+          <div class="checkbox-group"><input type="checkbox" id="s3"><label for="s3">Branding e Identidad</label></div>
+          <p class="tv-text" style="margin-top:20px;">Costo estimado: <span style="color:#fff; font-weight:bold;">1000 CR</span></p>
+          <button class="tv-submit" onclick="alert('SERVICIOS CONTRATADOS')">CONTRATAR</button>
+        </div>
+
+        <div class="tv-content" id="content-contacto" style="display:none;">
+          <h2 class="tv-title">CANAL DE CONTACTO</h2>
+          <p class="tv-text">Envía una transmisión segura:</p>
+          <form onsubmit="event.preventDefault(); alert('TRANSMISIÓN ENVIADA');">
+            <div class="form-group"><label>ID DE OPERADOR (Nombre)</label><input type="text" class="tv-input" placeholder="Ej: Charly" required></div>
+            <div class="form-group"><label>FRECUENCIA (Email)</label><input type="email" class="tv-input" placeholder="charly@red.com" required></div>
+            <div class="form-group"><label>MENSAJE</label><textarea class="tv-input" rows="3" placeholder="Escribe aquí..." required></textarea></div>
+            <div class="checkbox-group"><input type="checkbox" id="terms" required><label for="terms">Acepto los protocolos de seguridad</label></div>
+            <button type="submit" class="tv-submit">ENVIAR</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const buttons = document.querySelectorAll('.btn');
+    const mainTitle = document.getElementById('main-title');
+    const topSection = document.getElementById('top-section');
+    const bottomSection = document.getElementById('bottom-section');
+    const tvClose = document.getElementById('tv-close');
+
+    // Función para cambiar el contenido y el título
+    function switchSection(sectionId, titleText) {
+      document.querySelectorAll('.tv-content').forEach(el => el.style.display = 'none');
+      const target = document.getElementById('content-' + sectionId);
+      if(target) {
+        target.style.display = 'block';
+        document.getElementById('tv-screen').scrollTo(0, 0);
+      }
+      
+      mainTitle.textContent = titleText;
+      mainTitle.setAttribute('data-text', titleText);
+    }
+
+    // --- CLICS EN EL MENÚ ---
+    buttons.forEach(btn => {
+      // Hover
+      btn.addEventListener('mouseenter', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+
+      // Click -> Abre consola, desbloquea scroll y baja
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const section = btn.getAttribute('data-section');
+        const title = btn.getAttribute('data-title');
+        
+        // 1. Cambiar contenido
+        switchSection(section, title);
+        
+        // 2. Mostrar la consola
+        bottomSection.classList.add('active');
+        
+        // 3. DESBLOQUEAR EL SCROLL para poder bajar
+        document.body.classList.add('console-active');
+        
+        // 4. Hacer el "tiro" hacia abajo
+        setTimeout(() => {
+          bottomSection.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+      });
     });
 
-    function getCurrentLevelData() {
-        let current = fileStructure;
-        for (let folder of currentPath) {
-            if (current[folder]) {
-                current = current[folder];
-            } else {
-                return {};
-            }
-        }
-        return current;
+    // --- BOTÓN OFF DE LA CONSOLA ---
+    tvClose.addEventListener('click', () => {
+      // 1. Hacer scroll de vuelta arriba
+      topSection.scrollIntoView({ behavior: 'smooth' });
+      
+      // 2. Esperar a que termine el scroll para ocultar la consola y bloquear de nuevo
+      setTimeout(() => {
+        // Ocultar consola
+        bottomSection.classList.remove('active');
+        
+        // BLOQUEAR EL SCROLL otra vez (así no deja bajar si no eliges nada)
+        document.body.classList.remove('console-active');
+        
+        // Resetear título
+        buttons.forEach(b => b.classList.remove('active'));
+        buttons[0].classList.add('active');
+        mainTitle.textContent = "MENÚ PRINCIPAL";
+        mainTitle.setAttribute('data-text', "MENÚ PRINCIPAL");
+      }, 600); // Un poco de delay para que el scroll sea fluido antes de desaparecer
+    });
+
+    // --- LÓGICA SLIDER ---
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    window.moveSlide = function(n) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = (currentSlide + n + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
     }
+    setInterval(() => {
+      if(document.getElementById('content-proyectos').style.display === 'block') {
+        moveSlide(1);
+      }
+    }, 3000);
 
-    function renderView() {
-        fileList.innerHTML = '';
-        let data = getCurrentLevelData();
-
-        // Mostrar ruta actual
-        let rootName = folderInput.files.length > 0 ? folderInput.files[0].webkitRelativePath.split('/')[0] : '';
-        let displayStr = rootName + (currentPath.length > 0 ? '/' + currentPath.join('/') : '');
-        pathDisplay.innerText = "📁 Explorando: " + (displayStr || 'Raíz');
-
-        // Botón de retroceso
-        backBtn.style.display = currentPath.length > 0 ? 'inline-flex' : 'none';
-
-        let keys = Object.keys(data).sort((a, b) => {
-            let aIsObj = data[a] instanceof File ? 0 : 1;
-            let bIsObj = data[b] instanceof File ? 0 : 1;
-            return bIsObj - aIsObj || a.localeCompare(b);
-        });
-
-        if (keys.length === 0) {
-            fileList.innerHTML = `<div class="welcome-screen"><p>Esta carpeta está vacía.</p></div>`;
-            return;
-        }
-
-        keys.forEach(key => {
-            let item = data[key];
-            let isDirectory = !(item instanceof File);
-
-            let li = document.createElement('li');
-            li.className = 'item-row';
-
-            let iconSpan = document.createElement('span');
-            iconSpan.className = 'item-icon';
-            iconSpan.innerText = isDirectory ? '📁' : '📄';
-
-            let nameSpan = document.createElement('span');
-            nameSpan.className = 'item-name';
-            nameSpan.innerText = key;
-
-            let typeSpan = document.createElement('span');
-            typeSpan.className = 'item-type';
-            typeSpan.innerText = isDirectory ? 'Carpeta' : 'Archivo';
-
-            li.appendChild(iconSpan);
-            li.appendChild(nameSpan);
-            li.appendChild(typeSpan);
-
-            li.onclick = () => {
-                if (isDirectory) {
-                    currentPath.push(key);
-                    renderView();
-                } else {
-                    // Abrir archivo de forma nativa creando un enlace temporal de objeto local
-                    let fileUrl = URL.createObjectURL(item);
-                    let a = document.createElement('a');
-                    a.href = fileUrl;
-                    a.target = '_blank';
-                    // Si es HTML, se abrirá directamente en el navegador como pestaña interactiva
-                    a.click();
-                }
-            };
-
-            fileList.appendChild(li);
-        });
-    }
-
-    function goBack() {
-        currentPath.pop();
-        renderView();
-    }
-</script>
-
+  </script>
 </body>
 </html>
