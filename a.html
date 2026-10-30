@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Monopoly Móvil</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; background:#1a1a2e; color:#fff; user-select:none; }
+  #app { display:flex; flex-direction:column; height:100%; position:relative; }
+
+  /* ===== MAPA arriba izquierda ===== */
+  #mapa {
+    position:absolute; top:8px; left:8px; width:110px; height:110px;
+    background:#0f3460; border:2px solid #e94560; border-radius:8px;
+    z-index:10; padding:4px;
+  }
+  #mapaGrid { display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(5,1fr); gap:1px; width:100%; height:100%; }
+  .mCell { background:#16213e; border-radius:2px; }
+  .mCell.activa { background:#e94560; box-shadow:0 0 6px #e94560; }
+  .mCell.jugador { outline:1px solid #f5c542; }
+
+  /* ===== CASILLA central grande ===== */
+  #casillaWrap { flex:1; display:flex; align-items:center; justify-content:center; padding:20px; }
+  #casilla {
+    width:90%; max-width:340px; aspect-ratio:1/1;
+    background:linear-gradient(145deg,#16213e,#0f3460);
+    border:3px solid #e94560; border-radius:20px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:15px; box-shadow:0 0 30px rgba(233,69,96,.4);
+    transition:transform .2s;
+  }
+  #casilla.pulse { transform:scale(1.05); }
+  #casillaIcono { font-size:56px; margin-bottom:8px; }
+  #casillaNombre { font-size:22px; font-weight:bold; color:#f5c542; margin-bottom:6px; }
+  #casillaTipo { font-size:13px; color:#9aa5b1; text-transform:uppercase; letter-spacing:1px; }
+  #casillaPrecio { font-size:15px; color:#4ecca3; margin-top:6px; }
+
+  /* ===== LVL de la casilla abajo ===== */
+  #lvlCasilla {
+    position:absolute; bottom:120px; left:50%; transform:translateX(-50%);
+    background:#0f3460; border:2px solid #4ecca3; border-radius:20px;
+    padding:4px 16px; font-size:14px; color:#4ecca3; font-weight:bold; z-index:5;
+  }
+
+  /* ===== DINERO abajo ===== */
+  #dineroBar {
+    position:absolute; bottom:70px; left:0; right:0;
+    display:flex; justify-content:center; gap:10px; padding:0 10px; z-index:5;
+  }
+  .dineroJugador {
+    background:#16213e; border:2px solid #333; border-radius:10px;
+    padding:5px 10px; font-size:12px; text-align:center; flex:1; max-width:90px;
+    transition:border-color .3s;
+  }
+  .dineroJugador.turno { border-color:#e94560; box-shadow:0 0 10px rgba(233,69,96,.6); }
+  .dineroJugador .nombre { font-weight:bold; font-size:11px; }
+  .dineroJugador .cantidad { color:#4ecca3; font-weight:bold; font-size:14px; }
+  .dineroJugador .pos { font-size:9px; color:#9aa5b1; }
+
+  /* ===== DADOS abajo ===== */
+  #dadosBar {
+    position:absolute; bottom:0; left:0; right:0; height:65px;
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    background:#0f3460; border-top:2px solid #e94560; z-index:6;
+  }
+  .dado {
+    width:46px; height:46px; background:#fff; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:bold; color:#16213e;
+    box-shadow:0 3px 0 #999; transition:transform .1s;
+  }
+  .dado.rolling { animation:roll .4s infinite; }
+  @keyframes roll { 0%{transform:rotate(0)} 50%{transform:rotate(180deg) scale(1.1)} 100%{transform:rotate(360deg)} }
+  #btnTirar {
+    background:#e94560; color:#fff; border:none; border-radius:12px;
+    padding:12px 22px; font-size:16px; font-weight:bold; cursor:pointer;
+    box-shadow:0 4px 0 #a02a3f; transition:all .1s;
+  }
+  #btnTirar:active { transform:translateY(3px); box-shadow:0 1px 0 #a02a3f; }
+  #btnTirar:disabled { opacity:.5; }
+
+  /* ===== Mensaje flotante ===== */
+  #mensaje {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0);
+    background:rgba(233,69,96,.95); padding:16px 28px; border-radius:14px;
+    font-size:18px; font-weight:bold; z-index:100; text-align:center;
+    transition:transform .25s; pointer-events:none; max-width:80%;
+  }
+  #mensaje.show { transform:translate(-50%,-50%) scale(1); }
+
+  /* ===== Turno indicador ===== */
+  #turnoInd {
+    position:absolute; top:8px; right:8px; z-index:10;
+    background:#0f3460; border:2px solid #f5c542; border-radius:10px;
+    padding:6px 12px; font-size:12px; text-align:center;
+  }
+  #turnoInd .tnombre { font-weight:bold; color:#f5c542; font-size:14px; }
+
+  /* ===== Botón comprar ===== */
+  #btnComprar {
+    position:absolute; bottom:200px; left:50%; transform:translateX(-50%) scale(0);
+    background:#4ecca3; color:#16213e; border:none; border-radius:12px;
+    padding:10px 24px; font-size:15px; font-weight:bold; cursor:pointer;
+    box-shadow:0 4px 0 #2e8b6e; transition:all .2s; z-index:20;
+  }
+  #btnComprar.show { transform:translateX(-50%) scale(1); }
+  #btnComprar:active { transform:translateX(-50%) scale(1) translateY(3px); box-shadow:0 1px 0 #2e8b6e; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MAPA arriba izquierda -->
+  <div id="mapa">
+    <div id="mapaGrid"></div>
+  </div>
+
+  <!-- Turno indicador arriba derecha -->
+  <div id="turnoInd">
+    <div style="font-size:9px;color:#9aa5b1;">TURNO</div>
+    <div class="tnombre" id="turnoNombre">Tú</div>
+  </div>
+
+  <!-- CASILLA central grande -->
+  <div id="casillaWrap">
+    <div id="casilla">
+      <div id="casillaIcono">🏠</div>
+      <div id="casillaNombre">SALIDA</div>
+      <div id="casillaTipo">Especial</div>
+      <div id="casillaPrecio"></div>
+    </div>
+  </div>
+
+  <!-- LVL de la casilla abajo -->
+  <div id="lvlCasilla">LVL 1</div>
+
+  <!-- Botón comprar -->
+  <button id="btnComprar">COMPRAR</button>
+
+  <!-- DINERO abajo -->
+  <div id="dineroBar">
+    <div class="dineroJugador turno" id="dj0">
+      <div class="nombre">Tú</div>
+      <div class="cantidad">1500€</div>
+      <div class="pos">Casilla 0</div>
+    </div>
+    <div class="dineroJugador" id="dj1">
+      <div class="nombre">IA 1</div>
+      <div class="cantidad">1500€</div>
+      <div class="pos">Casilla 0</div>
+    </div>
+    <div class="dineroJugador" id="dj2">
+      <div class="nombre">IA 2</div>
+      <div class="cantidad">1500€</div>
+      <div class="pos">Casilla 0</div>
+    </div>
+    <div class="dineroJugador" id="dj3">
+      <div class="nombre">IA 3</div>
+      <div class="cantidad">1500€</div>
+      <div class="pos">Casilla 0</div>
+    </div>
+  </div>
+
+  <!-- DADOS abajo -->
+  <div id="dadosBar">
+    <div class="dado" id="dado1">?</div>
+    <div class="dado" id="dado2">?</div>
+    <button id="btnTirar">TIRAR</button>
+  </div>
+
+  <!-- Mensaje flotante -->
+  <div id="mensaje"></div>
+
+</div>
+
+<script>
+// ==================== DATOS DEL TABLERO ====================
+// 25 casillas en bucle (5x5 perímetro)
+const CASILLAS = [
+  { nombre:"SALIDA",        tipo:"especial", icono:"🏁", precio:0 },
+  { nombre:"Calle Sol",     tipo:"propiedad", icono:"🏠", precio:60 },
+  { nombre:"Calle Luna",    tipo:"propiedad", icono:"🏠", precio:80 },
+  { nombre:"Suerte",        tipo:"suerte",   icono:"🍀", precio:0 },
+  { nombre:"Calle Marte",   tipo:"propiedad", icono:"🏠", precio:100 },
+  { nombre:"Cárcel",        tipo:"especial", icono:"🚔", precio:0 },
+  { nombre:"Calle Venus",   tipo:"propiedad", icono:"🏠", precio:120 },
+  { nombre:"Calle Júpiter", tipo:"propiedad", icono:"🏠", precio:140 },
+  { nombre:"Impuesto",      tipo:"impuesto", icono:"💸", precio:0 },
+  { nombre:"Calle Saturno", tipo:"propiedad", icono:"🏠", precio:160 },
+  { nombre:"Parking",       tipo:"especial", icono:"🅿️", precio:0 },
+  { nombre:"Calle Urano",   tipo:"propiedad", icono:"🏠", precio:180 },
+  { nombre:"Calle Neptuno", tipo:"propiedad", icono:"🏠", precio:200 },
+  { nombre:"Suerte",        tipo:"suerte",   icono:"🍀", precio:0 },
+  { nombre:"Calle Plutón",  tipo:"propiedad", icono:"🏠", precio:220 },
+  { nombre:"Ir Cárcel",     tipo:"especial", icono:"🚨", precio:0 },
+  { nombre:"Avenida Sol",   tipo:"propiedad", icono:"🏠", precio:240 },
+  { nombre:"Avenida Luna",  tipo:"propiedad", icono:"🏠", precio:260 },
+  { nombre:"Impuesto",      tipo:"impuesto", icono:"💸", precio:0 },
+  { nombre:"Avenida Marte", tipo:"propiedad", icono:"🏠", precio:280 },
+  { nombre:"Suerte",        tipo:"suerte",   icono:"🍀", precio:0 },
+  { nombre:"Avenida Venus", tipo:"propiedad", icono:"🏠", precio:300 },
+  { nombre:"Avenida Júpiter",tipo:"propiedad",icono:"🏠", precio:320 },
+  { nombre:"Cárcel",        tipo:"especial", icono:"🚔", precio:0 },
+  { nombre:"Avenida Saturno",tipo:"propiedad",icono:"🏠", precio:350 },
+];
+
+const TOTAL = CASILLAS.length; // 25
+
+// ==================== ESTADO ====================
+const jugadores = [
+  { nombre:"Tú",    dinero:1500, pos:0, esIA:false, color:"#e94560" },
+  { nombre:"IA 1",  dinero:1500, pos:0, esIA:true,  color:"#4ecca3" },
+  { nombre:"IA 2",  dinero:1500, pos:0, esIA:true,  color:"#f5c542" },
+  { nombre:"IA 3",  dinero:1500, pos:0, esIA:true,  color:"#9b59b6" },
+];
+
+// Propietarios: { indiceCasilla: { dueño: idxJugador, nivel: 1..3 } }
+const propiedades = {};
+
+let turnoActual = 0;
+let esperandoCompra = false;
+let casillaActualCompra = -1;
+let dadosBloqueados = false;
+
+// ==================== DOM ====================
+const $ = id => document.getElementById(id);
+const casillaEl = $("casilla");
+const casillaIcono = $("casillaIcono");
+const casillaNombre = $("casillaNombre");
+const casillaTipo = $("casillaTipo");
+const casillaPrecio = $("casillaPrecio");
+const lvlCasilla = $("lvlCasilla");
+const dado1 = $("dado1");
+const dado2 = $("dado2");
+const btnTirar = $("btnTirar");
+const btnComprar = $("btnComprar");
+const mensaje = $("mensaje");
+const turnoNombre = $("turnoNombre");
+
+// ==================== MAPA ====================
+// Creamos un grid 5x5 y colocamos las casillas en el perímetro en orden
+const mapaGrid = $("mapaGrid");
+const mapaCells = [];
+for (let i=0;i<25;i++){
+  const d = document.createElement("div");
+  d.className = "mCell";
+  mapaGrid.appendChild(d);
+  mapaCells.push(d);
+}
+// El perímetro del 5x5 en orden de Monopoly (sentido horario desde arriba-izq)
+const PERIMETRO = [
+  0,1,2,3,4,        // fila superior izq->der
+  9,14,19,24,       // columna derecha abajo
+  23,22,21,20,      // fila inferior der->izq
+  15,10,5           // columna izquierda arriba
+];
+// PERIMETRO tiene 16 posiciones; nuestro tablero tiene 25 casillas.
+// Ajustamos: usamos las 25 celdas del grid y mapeamos casilla i -> celda del perímetro extendido.
+// Mejor: recorremos el perímetro del grid (16 celdas) y repetimos para 25 casillas.
+function getMapaIndex(casillaIdx){
+  // perímetro de 16 celdas -> escalamos a 25 casillas
+  const idx16 = Math.floor(casillaIdx * 16 / TOTAL) % 16;
+  return PERIMETRO[idx16];
+}
+
+// ==================== RENDER ====================
+function renderMapa(){
+  mapaCells.forEach(c => { c.className = "mCell"; });
+  // marcar activa
+  const mi = getMapaIndex(jugadores[turnoActual].pos);
+  mapaCells[mi].classList.add("activa");
+  // marcar posición de cada jugador
+  jugadores.forEach(j => {
+    const idx = getMapaIndex(j.pos);
+    mapaCells[idx].classList.add("jugador");
+  });
+}
+
+function renderCasilla(idx){
+  const c = CASILLAS[idx];
+  casillaIcono.textContent = c.icono;
+  casillaNombre.textContent = c.nombre;
+  casillaTipo.textContent = c.tipo;
+  if (c.tipo === "propiedad"){
+    const prop = propiedades[idx];
+    if (prop){
+      casillaPrecio.textContent = `Dueño: ${jugadores[prop.dueño].nombre} · Nivel ${prop.nivel}`;
+    } else {
+      casillaPrecio.textContent = `Precio: ${c.precio}€`;
+    }
+  } else {
+    casillaPrecio.textContent = "";
+  }
+  // LVL de la casilla
+  const prop = propiedades[idx];
+  lvlCasilla.textContent = prop ? `LVL ${prop.nivel}` : "LVL —";
+  casillaEl.classList.add("pulse");
+  setTimeout(()=>casillaEl.classList.remove("pulse"),200);
+}
+
+function renderDinero(){
+  jugadores.forEach((j,i)=>{
+    const dj = $("dj"+i);
+    dj.classList.toggle("turno", i===turnoActual);
+    dj.querySelector(".cantidad").textContent = j.dinero+"€";
+    dj.querySelector(".pos").textContent = "Casilla "+j.pos;
+    dj.style.borderColor = i===turnoActual ? j.color : "#333";
+  });
+  turnoNombre.textContent = jugadores[turnoActual].nombre;
+  turnoNombre.style.color = jugadores[turnoActual].color;
+}
+
+function renderTodo(){
+  renderMapa();
+  renderCasilla(jugadores[turnoActual].pos);
+  renderDinero();
+}
+
+// ==================== MENSAJES ====================
+function mostrarMensaje(txt, dur=1400){
+  mensaje.textContent = txt;
+  mensaje.classList.add("show");
+  clearTimeout(mensaje._t);
+  mensaje._t = setTimeout(()=>mensaje.classList.remove("show"), dur);
+}
+
+// ==================== DADOS ====================
+function tirarDados(){
+  return new Promise(res=>{
+    dado1.classList.add("rolling");
+    dado2.classList.add("rolling");
+    let ticks = 0;
+    const iv = setInterval(()=>{
+      dado1.textContent = 1+Math.floor(Math.random()*6);
+      dado2.textContent = 1+Math.floor(Math.random()*6);
+      ticks++;
+      if (ticks >= 8){
+        clearInterval(iv);
+        dado1.classList.remove("rolling");
+        dado2.classList.remove("rolling");
+        const v1 = 1+Math.floor(Math.random()*6);
+        const v2 = 1+Math.floor(Math.random()*6);
+        dado1.textContent = v1;
+        dado2.textContent = v2;
+        res(v1+v2);
+      }
+    }, 60);
+  });
+}
+
+// ==================== LÓGICA DE TURNO ====================
+async function turno(){
+  if (dadosBloqueados) return;
+  dadosBloqueados = true;
+  btnTirar.disabled = true;
+  btnComprar.classList.remove("show");
+  esperandoCompra = false;
+
+  const j = jugadores[turnoActual];
+  const total = await tirarDados();
+  mostrarMensaje(`${j.nombre} saca ${total}`, 900);
+
+  // mover
+  j.pos = (j.pos + total) % TOTAL;
+  renderCasilla(j.pos);
+  renderMapa();
+  renderDinero();
+
+  // resolver casilla
+  await resolverCasilla(j, j.pos);
+
+  // si no está esperando compra, pasar turno
+  if (!esperandoCompra){
+    siguienteTurno();
+  }
+}
+
+async function resolverCasilla(j, idx){
+  const c = CASILLAS[idx];
+
+  if (c.tipo === "propiedad"){
+    const prop = propiedades[idx];
+    if (!prop){
+      // ofrecer compra (solo si es humano)
+      if (!j.esIA && j.dinero >= c.precio){
+        casillaActualCompra = idx;
+        esperandoCompra = true;
+        btnComprar.textContent = `COMPRAR ${c.precio}€`;
+        btnComprar.classList.add("show");
+        mostrarMensaje(`${c.nombre} está libre. ¿Comprar?`, 1200);
+        // esperar decisión del jugador (se maneja en click)
+        return;
+      } else if (j.esIA && j.dinero >= c.precio && Math.random() > 0.3){
+        // IA compra
+        comprarPropiedad(j, idx);
+        mostrarMensaje(`${j.nombre} compra ${c.nombre}`, 1100);
+      }
+    } else if (prop.dueño !== turnoActual){
+      // pagar alquiler
+      const alquiler = Math.floor(c.precio * 0.15 * prop.nivel);
+      j.dinero -= alquiler;
+      jugadores[prop.dueño].dinero += alquiler;
+      mostrarMensaje(`Pagas ${alquiler}€ a ${jugadores[prop.dueño].nombre}`, 1300);
+      renderDinero();
+      if (j.dinero < 0) quiebra(j);
+    } else {
+      // es tuya: subir nivel
+      if (prop.nivel < 3 && j.dinero >= c.precio * 0.5){
+        if (j.esIA && Math.random() > 0.4){
+          subirNivel(j, idx);
+          mostrarMensaje(`${j.nombre} sube ${c.nombre} a LVL ${propiedades[idx].nivel}`, 1100);
+        } else if (!j.esIA){
+          // ofrecer mejora automática
+          subirNivel(j, idx);
+          mostrarMensaje(`Mejoras ${c.nombre} a LVL ${propiedades[idx].nivel}`, 1100);
+        }
+      }
+    }
+  } else if (c.tipo === "suerte"){
+    const r = Math.random();
+    if (r < 0.5){
+      j.dinero += 50;
+      mostrarMensaje("¡Suerte! +50€", 1100);
+    } else {
+      j.dinero -= 30;
+      mostrarMensaje("Mala suerte... -30€", 1100);
+    }
+    renderDinero();
+  } else if (c.tipo === "impuesto"){
+    const imp = 80;
+    j.dinero -= imp;
+    mostrarMensaje(`Impuesto: -${imp}€`, 1100);
+    renderDinero();
+    if (j.dinero < 0) quiebra(j);
+  } else if (c.tipo === "especial"){
+    if (c.nombre === "Cárcel"){
+      mostrarMensaje("Cárcel: pierdes 1 turno", 1100);
+      j._saltar = true;
+    } else if (c.nombre === "Parking"){
+      mostrarMensaje("Parking: turno tranquilo", 900);
+    } else if (c.nombre === "SALIDA"){
+      j.dinero += 100;
+      mostrarMensaje("¡Pasas por SALIDA! +100€", 1100);
+      renderDinero();
+    } else if (c.nombre === "Ir Cárcel"){
+      j.pos = 5; // cárcel
+      mostrarMensaje("¡A la cárcel!", 1100);
+      j._saltar = true;
+      renderCasilla(j.pos);
+      renderMapa();
+    }
+  }
+}
+
+function comprarPropiedad(j, idx){
+  propiedades[idx] = { dueño: turnoActual, nivel: 1 };
+  j.dinero -= CASILLAS[idx].precio;
+  renderDinero();
+  renderCasilla(idx);
+  renderMapa();
+  esperandoCompra = false;
+  btnComprar.classList.remove("show");
+}
+
+function subirNivel(j, idx){
+  const p = propiedades[idx];
+  if (!p || p.nivel >= 3) return;
+  const coste = Math.floor(CASILLAS[idx].precio * 0.5);
+  if (j.dinero < coste) return;
+  j.dinero -= coste;
+  p.nivel++;
+  renderDinero();
+  renderCasilla(idx);
+}
+
+function quiebra(j){
+  mostrarMensaje(`${j.nombre} ha quebrado 💀`, 2000);
+  // reiniciar dinero simple
+  j.dinero = 500;
+  j.pos = 0;
+  renderDinero();
+  renderMapa();
+}
+
+function siguienteTurno(){
+  esperandoCompra = false;
+  btnComprar.classList.remove("show");
+  casillaActualCompra = -1;
+
+  // comprobar saltar turno
+  let next = (turnoActual + 1) % jugadores.length;
+  // si el siguiente tiene _saltar, saltarlo una vez
+  if (jugadores[next]._saltar){
+    jugadores[next]._saltar = false;
+    mostrarMensaje(`${jugadores[next].nombre} pierde turno`, 1000);
+    next = (next + 1) % jugadores.length;
+  }
+
+  turnoActual = next;
+  dadosBloqueados = false;
+  btnTirar.disabled = false;
+  renderTodo();
+
+  // si es IA, tirar automáticamente tras un pequeño delay
+  if (jugadores[turnoActual].esIA){
+    setTimeout(()=>{ turno(); }, 800);
+  }
+}
+
+// ==================== EVENTOS ====================
+btnTirar.addEventListener("click", ()=>{
+  if (jugadores[turnoActual].esIA) return;
+  turno();
+});
+
+btnComprar.addEventListener("click", ()=>{
+  if (!esperandoCompra) return;
+  const j = jugadores[turnoActual];
+  comprarPropiedad(j, casillaActualCompra);
+  mostrarMensaje(`${j.nombre} compra ${CASILLAS[casillaActualCompra].nombre}`, 1100);
+  setTimeout(()=>{ siguienteTurno(); }, 900);
+});
+
+// ==================== INICIO ====================
+renderTodo();
+mostrarMensaje("¡Tu turno! Pulsa TIRAR", 1800);
+
+// Pequeño ajuste: si empieza IA (no es el caso, empieza humano), lanzaría solo.
+// turnoActual = 0 es humano.
+
+</script>
+</body>
+</html>
